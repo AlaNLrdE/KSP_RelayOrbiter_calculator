@@ -20,6 +20,7 @@ htmlcov/
 
 # ── Build / packaging ─────────────────────────────────────────────────────────
 build/
+!build/Makefile
 dist/
 *.egg-info/
 *.egg
