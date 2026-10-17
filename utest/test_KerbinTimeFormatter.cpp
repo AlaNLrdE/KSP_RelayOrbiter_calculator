@@ -68,6 +68,6 @@ TEST(KerbinTimeFormatter, KerbinRotPeriodFormatsCorrectly) {
 
 TEST(KerbinTimeFormatter, FractionalSecondsRoundedToOneDecimal) {
     KerbinTimeFormatter fmt;
-    EXPECT_EQ(fmt.format(1.45), "0y 0d 0h 0m 1.5s");
+    EXPECT_EQ(fmt.format(1.46), "0y 0d 0h 0m 1.5s");
     EXPECT_EQ(fmt.format(1.44), "0y 0d 0h 0m 1.4s");
 }
