@@ -28,10 +28,13 @@ An interactive CLI tool that computes the orbital parameters needed to deploy **
 ## Quick Start
 
 ```
-python3 relay_calculator.py
+make -C build app
+./build/obj/relay_calculator
 ```
 
-Requires Python 3.10+ (uses `float | None` union syntax). No external dependencies.
+Requires a C++20 compiler. Run the test suite with `make -C build test`.
+
+> The original Python implementation (`python/`) has been deprecated and removed in favour of the C++20 port.
 
 ---
 
