@@ -160,6 +160,13 @@ Building this documentation
 ---------------------------
 
 The documentation is a Sphinx project in ``docs/`` with PlantUML diagrams.
+It is published at https://alanlrde.github.io/KSP_RelayOrbiter_calculator/ by
+the ``Documentation`` GitHub Actions workflow
+(``.github/workflows/docs.yml``), which builds it on every push and pull
+request and deploys it to GitHub Pages from ``master``. The workflow pins the
+same PlantUML release used locally and verifies its SHA-256 checksum.
+
+To build it locally:
 
 .. code-block:: sh
 

@@ -1,5 +1,9 @@
 # KSP Relay Satellite Constellation Calculator
 
+[![Documentation](https://github.com/AlaNLrdE/KSP_RelayOrbiter_calculator/actions/workflows/docs.yml/badge.svg)](https://github.com/AlaNLrdE/KSP_RelayOrbiter_calculator/actions/workflows/docs.yml)
+
+📖 **Full documentation: <https://alanlrde.github.io/KSP_RelayOrbiter_calculator/>**
+
 An interactive C++20 command-line tool that computes the orbital parameters needed to deploy **3 relay satellites evenly spaced 120° apart** using a single carrier vessel — no manual timing, no mods required.
 
 ---
@@ -136,7 +140,9 @@ To run a subset, call the binary directly with a GoogleTest filter:
 
 ## Documentation
 
-Detailed documentation — user guide, orbital-mechanics derivation, architecture, per-class API reference, and PlantUML diagrams — is a Sphinx project in `docs/`.
+Detailed documentation — user guide, orbital-mechanics derivation, architecture, per-class API reference, and PlantUML diagrams — is a Sphinx project in `docs/`, published at **<https://alanlrde.github.io/KSP_RelayOrbiter_calculator/>**.
+
+The [Documentation workflow](.github/workflows/docs.yml) builds it on every push and pull request and deploys it to GitHub Pages from `master`. To build it locally:
 
 ```sh
 make -C build html                   # or: make -C docs html
