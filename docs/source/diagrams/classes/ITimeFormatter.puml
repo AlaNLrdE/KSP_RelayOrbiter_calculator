@@ -1,0 +1,11 @@
+@startuml ITimeFormatter
+interface ITimeFormatter {
+  + {abstract} format(seconds : double) : std::string
+}
+class KerbinTimeFormatter <<final>>
+class ConsoleReportFormatter
+class Application
+KerbinTimeFormatter ..|> ITimeFormatter
+ConsoleReportFormatter o--> ITimeFormatter : time_formatter_
+Application o--> ITimeFormatter : time_formatter_
+@enduml

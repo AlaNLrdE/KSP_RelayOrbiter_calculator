@@ -1,0 +1,23 @@
+@startuml act_custom_altitude
+title Custom altitude validation chain
+
+start
+repeat
+  :raw = read_line("Altitude [km]: ");
+  if (std::stod(raw) throws?) then (yes)
+    :print "Please enter a number.";
+  else (no)
+    :h = value × 1000  (metres);
+    if (h <= 0?) then (yes)
+      :print "Altitude must be positive.";
+    elseif (atm > 0 and h < atm?) then (yes)
+      :print "inside the atmosphere";
+    elseif (h_soi_max set and h > h_soi_max?) then (yes)
+      :print "exceeds SOI limit";
+    else (valid)
+      :return h;
+      stop
+    endif
+  endif
+repeat while (true)
+@enduml

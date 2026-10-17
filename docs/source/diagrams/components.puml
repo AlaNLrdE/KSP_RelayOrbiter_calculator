@@ -1,0 +1,54 @@
+@startuml components
+title Layered component view
+
+package "Composition root" {
+  [main.cpp] as Main
+}
+
+package "Presentation" {
+  [Application] as App
+  [ConsoleReportFormatter] as Report
+  [KerbinTimeFormatter] as Time
+}
+
+package "Domain" {
+  [ConstellationCalculator] as Calc
+  [OrbitalMechanics] as Mech
+}
+
+package "Data" {
+  [KspBodyDatabase] as DB
+}
+
+package "Value types" {
+  [CelestialBody] as Body
+  [OrbitalResult] as Result
+}
+
+actor Player
+Player --> App : stdin / stdout
+
+Main ..> App : constructs + injects
+Main ..> Calc
+Main ..> Report
+Main ..> Time
+Main ..> DB
+Main ..> Mech
+
+App --> DB : IBodyDatabase
+App --> Calc : IConstellationCalculator
+App --> Report : IReportFormatter
+App --> Mech : sync / SOI queries
+Report --> Time : ITimeFormatter
+Calc --> Mech : IOrbitalMechanics
+
+DB ..> Body
+Calc ..> Body
+Calc ..> Result
+Report ..> Result
+
+note bottom of Mech
+  Pure functions:
+  no I/O, no state
+end note
+@enduml

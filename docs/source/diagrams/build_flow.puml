@@ -1,0 +1,24 @@
+@startuml build_flow
+title make -C build [all | app | test]
+
+start
+switch (target)
+case (app)
+  :compile src/*.cpp → build/obj/*.o;
+  :link build/obj/relay_calculator;
+case (test / all)
+  if (thirdparty/googletest/.../gtest/gtest.h exists?) then (no)
+    :git submodule update --init --recursive;
+  else (yes)
+  endif
+  :compile gtest-all.cc, gmock-all.cc, gtest_main.cc;
+  :compile utest/test_*.cpp;
+  :compile library sources (src/*.cpp except main.cpp);
+  :link build/obj/run_tests;
+  :run build/obj/run_tests;
+  if (target == all?) then (yes)
+    :also build relay_calculator;
+  endif
+endswitch
+stop
+@enduml

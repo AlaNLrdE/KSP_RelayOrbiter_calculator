@@ -1,0 +1,28 @@
+@startuml seq_calculate
+title ConstellationCalculator::calculate(body, h_target)
+
+participant "caller" as C
+participant "ConstellationCalculator" as Calc
+participant "mechanics_ : IOrbitalMechanics" as M
+
+C -> Calc : calculate(body, h_target)
+activate Calc
+Calc -> Calc : r_c = R + h_target
+Calc -> M : orbital_period(r_c, mu)
+M --> Calc : T_c
+Calc -> M : vis_viva(r_c, r_c, mu)
+M --> Calc : v_c
+Calc -> Calc : T_e = (2/3)·T_c\na_e = r_c·(2/3)^(2/3)
+Calc -> Calc : r_apo = r_c, h_apo = h_target\nr_peri = 2·a_e − r_c\nh_peri = r_peri − R
+Calc -> M : vis_viva(r_apo, a_e, mu)
+M --> Calc : v_apo
+Calc -> M : vis_viva(r_peri, a_e, mu)
+M --> Calc : v_peri
+Calc -> Calc : surface_ok = h_peri > 0\natm_ok = atm ≤ 0 or h_peri > atm
+Calc -> Calc : factor = 2·(2/3)^(2/3) − 1\nmin_h_surface = R/factor − R
+opt body.atm > 0
+  Calc -> Calc : min_h_atm = (R + atm)/factor − R
+end
+Calc --> C : OrbitalResult
+deactivate Calc
+@enduml

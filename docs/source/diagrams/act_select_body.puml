@@ -1,0 +1,25 @@
+@startuml act_select_body
+title select_body(db)
+
+start
+:all = db->all();
+:sort all by name;
+:print numbered list
+(name, radius, atmosphere, parent);
+repeat
+  :raw = read_line("Select body (number or name): ");
+  if (is_digits(raw)?) then (yes)
+    :idx = stoul(raw) − 1;
+    if (idx < all.size()?) then (yes)
+      :return all[idx];
+      stop
+    endif
+  endif
+  :found = db->find(raw);
+  if (found?) then (yes)
+    :return *found;
+    stop
+  endif
+  :print "Invalid selection";
+repeat while (true)
+@enduml

@@ -1,0 +1,57 @@
+@startuml act_ask_altitude
+title ask_altitude(body, db, mech) — menu construction and dispatch
+
+start
+:h_sync = mech->sync_orbit_altitude(body)
+h_soi_max = mech->soi_max_altitude(body)
+kids = db->children_of(body.name)
+cword = body has parent ? "moon" : "planet";
+
+partition "Build menu" {
+  :add "Synchronous orbit -> <tag>" (sync);
+  if (kids not empty?) then (yes)
+    :add "At a <cword>'s orbital distance" (child_single);
+    if (kids.size() >= 2?) then (yes)
+      :add "Midpoint between two <cword>s" (child_mid);
+    endif
+  endif
+  :add "Custom altitude" (custom);
+}
+
+:print menu (with atmosphere ceiling if any);
+
+repeat
+  :choice = read_line("Option [1-N]");
+  if (choice is a valid option number?) then (no)
+    :print hint;
+  else (yes)
+    switch (action)
+    case (sync)
+      if (h_sync missing?) then (yes)
+        :print "below the surface";
+      elseif (h_sync > h_soi_max?) then (yes)
+        :print SOI explanation;
+      else (no)
+        :return h_sync;
+        stop
+      endif
+    case (child_single)
+      :list children with orbital altitudes;
+      :pick one (re-prompt until valid);
+      :return orbital_radius − R;
+      stop
+    case (child_mid)
+      :list children;
+      :pick first;
+      :pick second (must differ);
+      :return (r_a + r_b) / 2 − R;
+      stop
+    case (custom)
+      :custom altitude loop
+      (see validation chain);
+      :return h;
+      stop
+    endswitch
+  endif
+repeat while (true)
+@enduml

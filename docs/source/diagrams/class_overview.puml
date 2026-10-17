@@ -1,0 +1,119 @@
+@startuml class_overview
+title Complete class diagram
+
+left to right direction
+
+package "Value types" {
+  class CelestialBody <<struct>> {
+    + name : std::string
+    + radius : double
+    + mu : double
+    + atm : double
+    + rot_period : double
+    + soi : std::optional<double>
+    + orbital_radius : std::optional<double>
+    + parent : std::optional<std::string>
+  }
+
+  class OrbitalResult <<struct>> {
+    + body_name : std::string
+    + h_target : double
+    + r_c : double
+    + T_c : double
+    + v_c : double
+    + T_e : double
+    + a_e : double
+    + r_apo : double
+    + h_apo : double
+    + r_peri : double
+    + h_peri : double
+    + v_apo : double
+    + v_peri : double
+    + surface_ok : bool
+    + atm_ok : bool
+    + min_h_surface : double
+    + min_h_atm : std::optional<double>
+  }
+}
+
+package "Interfaces" {
+  interface IOrbitalMechanics {
+    + {abstract} orbital_period(semi_major_axis, mu) : double
+    + {abstract} vis_viva(r, semi_major_axis, mu) : double
+    + {abstract} sync_orbit_altitude(body) : std::optional<double>
+    + {abstract} soi_max_altitude(body) : std::optional<double>
+  }
+
+  interface IBodyDatabase {
+    + {abstract} find(name) : std::optional<CelestialBody>
+    + {abstract} all() : std::vector<CelestialBody>
+    + {abstract} children_of(parent_name) : std::vector<CelestialBody>
+  }
+
+  interface IConstellationCalculator {
+    + {abstract} calculate(body, h_target) : OrbitalResult
+  }
+
+  interface IReportFormatter {
+    + {abstract} print(result) : void
+  }
+
+  interface ITimeFormatter {
+    + {abstract} format(seconds) : std::string
+  }
+}
+
+package "Implementations" {
+  class OrbitalMechanics <<final>>
+
+  class KspBodyDatabase <<final>> {
+    - {static} bodies_ : const std::vector<CelestialBody>
+  }
+
+  class ConstellationCalculator <<final>> {
+    - mechanics_ : std::shared_ptr<IOrbitalMechanics>
+    + ConstellationCalculator(mechanics)
+  }
+
+  class ConsoleReportFormatter <<final>> {
+    - time_formatter_ : std::shared_ptr<ITimeFormatter>
+    + ConsoleReportFormatter(time_formatter)
+  }
+
+  class KerbinTimeFormatter <<final>> {
+    + {static} HOUR : constexpr double = 3600
+    + {static} DAY : constexpr double = 21600
+    + {static} YEAR : constexpr double = 9201600
+  }
+}
+
+package "Application layer" {
+  class Application {
+    - db_ : std::shared_ptr<IBodyDatabase>
+    - calculator_ : std::shared_ptr<IConstellationCalculator>
+    - formatter_ : std::shared_ptr<IReportFormatter>
+    - time_formatter_ : std::shared_ptr<ITimeFormatter>
+    + Application(db, calculator, formatter, time_formatter)
+    + run() : void
+  }
+}
+
+OrbitalMechanics ..|> IOrbitalMechanics
+KspBodyDatabase ..|> IBodyDatabase
+ConstellationCalculator ..|> IConstellationCalculator
+ConsoleReportFormatter ..|> IReportFormatter
+KerbinTimeFormatter ..|> ITimeFormatter
+
+ConstellationCalculator o--> IOrbitalMechanics : mechanics_
+ConsoleReportFormatter o--> ITimeFormatter : time_formatter_
+
+Application o--> IBodyDatabase : db_
+Application o--> IConstellationCalculator : calculator_
+Application o--> IReportFormatter : formatter_
+Application o--> ITimeFormatter : time_formatter_
+Application ..> OrbitalMechanics : <<creates>>
+
+KspBodyDatabase *--> "17" CelestialBody
+IConstellationCalculator ..> OrbitalResult : <<returns>>
+IReportFormatter ..> OrbitalResult : <<reads>>
+@enduml

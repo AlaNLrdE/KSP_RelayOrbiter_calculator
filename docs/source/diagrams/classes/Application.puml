@@ -1,0 +1,27 @@
+@startuml Application
+class Application {
+  - db_ : std::shared_ptr<IBodyDatabase>
+  - calculator_ : std::shared_ptr<IConstellationCalculator>
+  - formatter_ : std::shared_ptr<IReportFormatter>
+  - time_formatter_ : std::shared_ptr<ITimeFormatter>
+  + Application(db, calculator, formatter, time_formatter)
+  + run() : void
+}
+class "Application.cpp" as helpers <<file-static helpers>> {
+  read_line(prompt : const char*) : std::string
+  is_digits(s : const std::string&) : bool
+  select_body(db) : CelestialBody
+  ask_altitude(body, db, mech) : double
+}
+interface IBodyDatabase
+interface IConstellationCalculator
+interface IReportFormatter
+interface ITimeFormatter
+class OrbitalMechanics
+Application o--> IBodyDatabase
+Application o--> IConstellationCalculator
+Application o--> IReportFormatter
+Application o--> ITimeFormatter
+Application ..> helpers : uses
+Application ..> OrbitalMechanics : <<creates>> in run()
+@enduml

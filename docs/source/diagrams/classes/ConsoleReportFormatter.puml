@@ -1,0 +1,18 @@
+@startuml ConsoleReportFormatter
+interface IReportFormatter
+interface ITimeFormatter
+class ConsoleReportFormatter <<final>> {
+  - time_formatter_ : std::shared_ptr<ITimeFormatter>
+  + ConsoleReportFormatter(time_formatter : std::shared_ptr<ITimeFormatter>)
+  + print(result : const OrbitalResult&) : void
+}
+class "ConsoleReportFormatter.cpp" as helpers <<file-static helpers>> {
+  W : constexpr int = 62
+  row(label, value, unit, warn) : void
+  fmt_km(metres, decimals = 2) : std::string
+  fmt_ms(v) : std::string
+}
+ConsoleReportFormatter ..|> IReportFormatter
+ConsoleReportFormatter o--> ITimeFormatter : time_formatter_
+ConsoleReportFormatter ..> helpers : uses
+@enduml

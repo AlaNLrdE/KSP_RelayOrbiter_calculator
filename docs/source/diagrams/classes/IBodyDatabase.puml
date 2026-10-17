@@ -1,0 +1,13 @@
+@startuml IBodyDatabase
+interface IBodyDatabase {
+  + {abstract} find(name : std::string_view) : std::optional<CelestialBody>
+  + {abstract} all() : std::vector<CelestialBody>
+  + {abstract} children_of(parent_name : std::string_view) : std::vector<CelestialBody>
+}
+class KspBodyDatabase <<final>>
+class Application
+class CelestialBody <<struct>>
+KspBodyDatabase ..|> IBodyDatabase
+Application o--> IBodyDatabase : db_
+IBodyDatabase ..> CelestialBody
+@enduml

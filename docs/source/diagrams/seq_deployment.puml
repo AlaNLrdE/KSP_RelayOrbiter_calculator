@@ -1,0 +1,29 @@
+@startuml seq_deployment
+title In-game deployment procedure (as printed in the report)
+
+participant "Carrier" as C
+participant "SAT-1" as S1
+participant "SAT-2" as S2
+participant "SAT-3" as S3
+
+== Setup ==
+C -> C : 1. circularize at h_target
+C -> C : 2. retrograde burn at apoapsis\nperiapsis → h_peri (parking orbit)
+
+== t = 0 (carrier at apoapsis) ==
+C -> S1 : 3. release
+S1 -> S1 : circularize at r_c
+
+== t = T_e ==
+note over C, S1 : SAT-1 advanced 240°; carrier is 120° behind it
+C -> S2 : 5. release
+S2 -> S2 : circularize at r_c
+
+== t = 2·T_e ==
+note over C, S2 : SAT-1 at 120°, SAT-2 at 240° relative to the carrier
+C -> S3 : 7. release
+S3 -> S3 : circularize at r_c
+
+== Done ==
+note over S1, S3 : 8. three satellites spaced 120° apart
+@enduml

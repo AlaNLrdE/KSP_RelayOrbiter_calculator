@@ -1,0 +1,34 @@
+@startuml state_app
+title Application::run() state machine
+
+[*] --> Banner
+Banner --> SelectBody
+
+state SelectBody : list bodies sorted by name
+state SelectBody : re-prompt on invalid input
+
+state AskAltitude {
+  [*] --> Menu
+  Menu --> SyncOrbit : option "sync"
+  Menu --> ChildDistance : option "child_single"
+  Menu --> Midpoint : option "child_mid"
+  Menu --> Custom : option "custom"
+  SyncOrbit --> Menu : outside SOI / unavailable
+  SyncOrbit --> [*] : h_sync
+  ChildDistance --> [*] : child orbital altitude
+  Midpoint --> [*] : mean of two child radii − R
+  Custom --> Custom : invalid / atm / SOI
+  Custom --> [*] : validated altitude
+}
+
+SelectBody --> AskAltitude : CelestialBody
+AskAltitude --> Calculate : h_target
+state Calculate : calculator_->calculate()
+Calculate --> Report : OrbitalResult
+state Report : formatter_->print()
+Report --> Again
+state Again : "Calculate for another body/altitude? [y/N]"
+Again --> SelectBody : y / yes
+Again --> Goodbye : anything else
+Goodbye --> [*]
+@enduml

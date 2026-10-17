@@ -1,0 +1,29 @@
+@startuml OrbitalResult
+class OrbitalResult <<struct>> {
+  .. identity ..
+  + body_name : std::string
+  + h_target : double = 0.0
+  .. circular orbit ..
+  + r_c : double = 0.0
+  + T_c : double = 0.0
+  + v_c : double = 0.0
+  .. elliptical parking orbit ..
+  + T_e : double = 0.0
+  + a_e : double = 0.0
+  + r_apo : double = 0.0
+  + h_apo : double = 0.0
+  + r_peri : double = 0.0
+  + h_peri : double = 0.0
+  + v_apo : double = 0.0
+  + v_peri : double = 0.0
+  .. safety ..
+  + surface_ok : bool = false
+  + atm_ok : bool = false
+  + min_h_surface : double = 0.0
+  + min_h_atm : std::optional<double>
+}
+interface IConstellationCalculator
+interface IReportFormatter
+IConstellationCalculator ..> OrbitalResult : <<produces>>
+IReportFormatter ..> OrbitalResult : <<consumes>>
+@enduml

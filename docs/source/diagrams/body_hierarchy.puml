@@ -1,0 +1,20 @@
+@startwbs body_hierarchy
+title Body hierarchy encoded by CelestialBody::parent
+* Kerbol
+** Moho
+** Eve
+*** Gilly
+** Kerbin
+*** Mun
+*** Minmus
+** Duna
+*** Ike
+** Dres
+** Jool
+*** Laythe
+*** Vall
+*** Tylo
+*** Bop
+*** Pol
+** Eeloo
+@endwbs

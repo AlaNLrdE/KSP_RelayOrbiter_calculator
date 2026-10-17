@@ -1,0 +1,35 @@
+@startuml test_structure
+title Test suites and what they exercise
+
+package "utest/" {
+  class "test_OrbitalMechanics.cpp\n15 tests" as TOM
+  class "test_KspBodyDatabase.cpp\n19 tests" as TDB
+  class "test_ConstellationCalculator.cpp\n20 tests" as TCC
+  class "test_KerbinTimeFormatter.cpp\n12 tests" as TKT
+  class "TestFixtures.hpp" as FX {
+    + make_kerbin() : CelestialBody
+    + make_mun() : CelestialBody
+    + make_kerbol() : CelestialBody
+  }
+}
+
+package "Production code" {
+  class OrbitalMechanics
+  class KspBodyDatabase
+  class ConstellationCalculator
+  class KerbinTimeFormatter
+}
+
+TOM --> OrbitalMechanics
+TOM ..> FX
+TDB --> KspBodyDatabase
+TCC --> ConstellationCalculator
+TCC --> OrbitalMechanics : real dependency
+TCC ..> FX
+TKT --> KerbinTimeFormatter
+
+note bottom of FX
+  Hand-built bodies keep math tests
+  independent of KspBodyDatabase.
+end note
+@enduml

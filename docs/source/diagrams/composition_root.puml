@@ -1,0 +1,40 @@
+@startuml composition_root
+title Object graph built by main()
+
+object "db : KspBodyDatabase" as db
+object "mechanics : OrbitalMechanics" as mech
+object "calculator : ConstellationCalculator" as calc {
+  mechanics_ = mechanics
+}
+object "time_fmt : KerbinTimeFormatter" as tf
+object "formatter : ConsoleReportFormatter" as fmt {
+  time_formatter_ = time_fmt
+}
+object "app : Application" as app {
+  db_ = db
+  calculator_ = calculator
+  formatter_ = formatter
+  time_formatter_ = time_fmt
+}
+object "mech : OrbitalMechanics" as localMech
+
+calc --> mech : shared_ptr
+fmt --> tf : shared_ptr
+app --> db : shared_ptr
+app --> calc : shared_ptr
+app --> fmt : shared_ptr
+app --> tf : shared_ptr
+app ..> localMech : local in run()
+
+note right of localMech
+  A second OrbitalMechanics
+  instance is created inside
+  Application::run() for the
+  altitude menu (not injected).
+end note
+
+note bottom of tf
+  Shared by the formatter
+  and the Application.
+end note
+@enduml

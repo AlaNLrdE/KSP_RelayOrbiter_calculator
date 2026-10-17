@@ -1,0 +1,18 @@
+@startuml KspBodyDatabase
+interface IBodyDatabase
+class KspBodyDatabase <<final>> {
+  - {static} bodies_ : const std::vector<CelestialBody>
+  + find(name) : std::optional<CelestialBody>
+  + all() : std::vector<CelestialBody>
+  + children_of(parent_name) : std::vector<CelestialBody>
+}
+class CelestialBody <<struct>>
+KspBodyDatabase ..|> IBodyDatabase
+KspBodyDatabase *--> "17" CelestialBody : bodies_
+note right of KspBodyDatabase
+  find():        linear scan, exact match
+  all():         copy in table order
+  children_of(): filter by parent,
+                 sort by orbital_radius
+end note
+@enduml

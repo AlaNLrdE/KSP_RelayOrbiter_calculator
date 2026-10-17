@@ -1,0 +1,14 @@
+@startuml KerbinTimeFormatter
+interface ITimeFormatter
+class KerbinTimeFormatter <<final>> {
+  + {static} HOUR : constexpr double = 3 600
+  + {static} DAY : constexpr double = 6 × HOUR
+  + {static} YEAR : constexpr double = 426 × DAY
+  + format(seconds : double) : std::string
+}
+KerbinTimeFormatter ..|> ITimeFormatter
+note right of KerbinTimeFormatter
+  Output: "%dy %dd %dh %dm %.1fs"
+  e.g. 21 549.425 s → "0y 0d 5h 59m 9.4s"
+end note
+@enduml

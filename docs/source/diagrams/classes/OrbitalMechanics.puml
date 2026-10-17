@@ -1,0 +1,16 @@
+@startuml OrbitalMechanics
+interface IOrbitalMechanics
+class OrbitalMechanics <<final>> {
+  + orbital_period(semi_major_axis, mu) : double
+  + vis_viva(r, semi_major_axis, mu) : double
+  + sync_orbit_altitude(body) : std::optional<double>
+  + soi_max_altitude(body) : std::optional<double>
+}
+class CelestialBody <<struct>>
+OrbitalMechanics ..|> IOrbitalMechanics
+OrbitalMechanics ..> CelestialBody : reads radius, mu,\nrot_period, soi
+note right of OrbitalMechanics
+  Stateless. All methods are
+  closed-form, O(1), no I/O.
+end note
+@enduml

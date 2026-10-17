@@ -1,0 +1,20 @@
+@startuml CelestialBody
+class CelestialBody <<struct>> {
+  + name : std::string
+  + radius : double  <<m>>
+  + mu : double  <<m³/s²>>
+  + atm : double  <<m>>
+  + rot_period : double  <<s>>
+  + soi : std::optional<double>  <<m>>
+  + orbital_radius : std::optional<double>  <<m>>
+  + parent : std::optional<std::string>
+}
+class KspBodyDatabase
+interface IBodyDatabase
+interface IOrbitalMechanics
+interface IConstellationCalculator
+KspBodyDatabase *--> "17" CelestialBody : bodies_
+IBodyDatabase ..> CelestialBody : returns
+IOrbitalMechanics ..> CelestialBody : reads
+IConstellationCalculator ..> CelestialBody : reads
+@enduml

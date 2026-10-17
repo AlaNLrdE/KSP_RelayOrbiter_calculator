@@ -1,0 +1,13 @@
+@startuml ConstellationCalculator
+interface IConstellationCalculator
+interface IOrbitalMechanics
+class ConstellationCalculator <<final>> {
+  - mechanics_ : std::shared_ptr<IOrbitalMechanics>
+  + ConstellationCalculator(mechanics : std::shared_ptr<IOrbitalMechanics>)
+  + calculate(body, h_target) : OrbitalResult
+}
+class OrbitalResult <<struct>>
+ConstellationCalculator ..|> IConstellationCalculator
+ConstellationCalculator o--> IOrbitalMechanics : mechanics_
+ConstellationCalculator ..> OrbitalResult : creates
+@enduml

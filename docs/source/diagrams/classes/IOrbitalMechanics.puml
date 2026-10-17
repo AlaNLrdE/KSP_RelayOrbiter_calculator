@@ -1,0 +1,14 @@
+@startuml IOrbitalMechanics
+interface IOrbitalMechanics {
+  + {abstract} orbital_period(semi_major_axis : double, mu : double) : double
+  + {abstract} vis_viva(r : double, semi_major_axis : double, mu : double) : double
+  + {abstract} sync_orbit_altitude(body : const CelestialBody&) : std::optional<double>
+  + {abstract} soi_max_altitude(body : const CelestialBody&) : std::optional<double>
+}
+class OrbitalMechanics <<final>>
+class ConstellationCalculator
+class Application
+OrbitalMechanics ..|> IOrbitalMechanics
+ConstellationCalculator o--> IOrbitalMechanics : mechanics_
+Application ..> IOrbitalMechanics : ask_altitude()
+@enduml

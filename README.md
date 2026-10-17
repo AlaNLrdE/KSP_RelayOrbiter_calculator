@@ -14,23 +14,24 @@ An interactive C++20 command-line tool that computes the orbital parameters need
    - [Choosing a Compiler](#choosing-a-compiler)
    - [Troubleshooting](#troubleshooting)
 3. [Running the Tests](#running-the-tests)
-4. [Example Session](#example-session)
-5. [Use Case](#use-case)
-6. [Orbital Mechanics](#orbital-mechanics)
+4. [Documentation](#documentation)
+5. [Example Session](#example-session)
+6. [Use Case](#use-case)
+7. [Orbital Mechanics](#orbital-mechanics)
    - [The Core Constraint](#the-core-constraint)
    - [Deriving the Parking Orbit](#deriving-the-parking-orbit)
    - [Minimum Safe Altitude](#minimum-safe-altitude)
-7. [Deployment Diagrams](#deployment-diagrams)
+8. [Deployment Diagrams](#deployment-diagrams)
    - [Orbit Geometry](#orbit-geometry)
    - [Deployment Timeline](#deployment-timeline)
-8. [Project Layout](#project-layout)
-9. [Architecture](#architecture)
-10. [API Reference](#api-reference)
-11. [Data Model](#data-model)
-12. [Input Validation & Edge Cases](#input-validation--edge-cases)
-13. [Performance](#performance)
-14. [Extending the Calculator](#extending-the-calculator)
-15. [Supported Bodies](#supported-bodies)
+9. [Project Layout](#project-layout)
+10. [Architecture](#architecture)
+11. [API Reference](#api-reference)
+12. [Data Model](#data-model)
+13. [Input Validation & Edge Cases](#input-validation--edge-cases)
+14. [Performance](#performance)
+15. [Extending the Calculator](#extending-the-calculator)
+16. [Supported Bodies](#supported-bodies)
 
 ---
 
@@ -127,6 +128,19 @@ To run a subset, call the binary directly with a GoogleTest filter:
 
 ```sh
 ./build/obj/run_tests --gtest_filter='ConstellationCalculator.*'
+```
+
+---
+
+## Documentation
+
+Detailed documentation — user guide, orbital-mechanics derivation, architecture, per-class API reference, and PlantUML diagrams — is a Sphinx project in `docs/`.
+
+Requirements: Python 3.10+ and [PlantUML](https://plantuml.com) on `PATH` (`brew install plantuml` on macOS).
+
+```sh
+make -C docs html                    # first run creates docs/.venv and installs Sphinx
+open docs/_build/html/index.html
 ```
 
 ---
@@ -380,6 +394,7 @@ KSP_RelayOrbiter_calculator/
 ├── build/
 │   ├── Makefile                     Build, test, and clean targets
 │   └── obj/                         Build outputs (git-ignored)
+├── docs/                            Sphinx documentation + PlantUML diagrams
 ├── hpp/                             Public headers
 │   ├── CelestialBody.hpp            Body data struct
 │   ├── OrbitalResult.hpp            Calculation result value object
@@ -623,7 +638,7 @@ User input (km, string)
 | Mun    | 2,970.6 km  | 2,229.6 km  | 1.33× |
 | Minmus | 3,670.4 km  | 2,187.4 km  | 1.68× |
 | Ike    | 1,133.9 km  |   919.6 km  | 1.23× |
-| Vall   | 3,593.2 km  | 2,106.4 km  | 1.71× |
+| Vall   | 3,593.8 km  | 2,106.4 km  | 1.71× |
 | Bop    | 2,588.2 km  | 1,156.1 km  | 2.24× |
 | Pol    | 2,415.1 km  |   998.1 km  | 2.42× |
 | Laythe | 4,686.3 km  | 3,223.6 km  | 1.45× |

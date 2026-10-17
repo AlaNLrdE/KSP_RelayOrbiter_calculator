@@ -1,0 +1,13 @@
+@startuml IConstellationCalculator
+interface IConstellationCalculator {
+  + {abstract} calculate(body : const CelestialBody&, h_target : double) : OrbitalResult
+}
+class ConstellationCalculator <<final>>
+class Application
+class CelestialBody <<struct>>
+class OrbitalResult <<struct>>
+ConstellationCalculator ..|> IConstellationCalculator
+Application o--> IConstellationCalculator : calculator_
+IConstellationCalculator ..> CelestialBody : input
+IConstellationCalculator ..> OrbitalResult : output
+@enduml

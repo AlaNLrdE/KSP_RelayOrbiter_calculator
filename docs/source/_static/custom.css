@@ -1,0 +1,9 @@
+/* Let wide PlantUML diagrams scale down instead of overflowing the column. */
+.rst-content img[src$=".svg"] {
+    max-width: 100%;
+    height: auto;
+}
+
+.wy-nav-content {
+    max-width: 1000px;
+}

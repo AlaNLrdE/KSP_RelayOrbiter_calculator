@@ -1,0 +1,55 @@
+@startuml seq_session
+title One calculation session — Application::run()
+
+actor Player
+participant "main()" as Main
+participant "app : Application" as App
+participant "db : IBodyDatabase" as DB
+participant "mech : OrbitalMechanics" as Mech
+participant "calculator_ : IConstellationCalculator" as Calc
+participant "formatter_ : IReportFormatter" as Fmt
+
+Main -> App : run()
+activate App
+App -> Mech ** : make_shared<OrbitalMechanics>()
+App -> Player : banner
+
+loop until the player answers anything other than "y" / "yes"
+  group select_body(db_)
+    App -> DB : all()
+    DB --> App : 17 bodies
+    App -> App : sort by name
+    App -> Player : numbered body list
+    Player -> App : number or name
+    opt input is a name
+      App -> DB : find(name)
+      DB --> App : optional<CelestialBody>
+    end
+  end
+
+  group ask_altitude(body, db_, mech)
+    App -> Mech : sync_orbit_altitude(body)
+    App -> Mech : soi_max_altitude(body)
+    App -> DB : children_of(body.name)
+    App -> Player : altitude menu
+    Player -> App : option (+ follow-up input)
+    App --> App : h_target (m)
+  end
+
+  App -> Calc : calculate(body, h_target)
+  activate Calc
+  Calc --> App : OrbitalResult
+  deactivate Calc
+
+  App -> Fmt : print(result)
+  activate Fmt
+  Fmt -> Player : report
+  deactivate Fmt
+
+  App -> Player : "Calculate for another body/altitude? [y/N]"
+  Player -> App : answer
+end
+
+App -> Player : "Good luck with the mission!"
+deactivate App
+@enduml

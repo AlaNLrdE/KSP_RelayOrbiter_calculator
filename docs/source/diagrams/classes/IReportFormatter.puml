@@ -1,0 +1,11 @@
+@startuml IReportFormatter
+interface IReportFormatter {
+  + {abstract} print(result : const OrbitalResult&) : void
+}
+class ConsoleReportFormatter <<final>>
+class Application
+class OrbitalResult <<struct>>
+ConsoleReportFormatter ..|> IReportFormatter
+Application o--> IReportFormatter : formatter_
+IReportFormatter ..> OrbitalResult
+@enduml

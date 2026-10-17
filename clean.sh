@@ -12,9 +12,9 @@ total=0
 remove() {
     local label="$1"; shift
     local count
-    count=$(find . -not -path "./.git/*" -not -path "./thirdparty/*" "$@" -print 2>/dev/null | wc -l)
+    count=$(find . -not -path "./.git/*" -not -path "./thirdparty/*" -not -path "./docs/.venv/*" "$@" -print 2>/dev/null | wc -l)
     if [ "$count" -gt 0 ]; then
-        find . -not -path "./.git/*" -not -path "./thirdparty/*" "$@" -exec rm -rf {} + 2>/dev/null || true
+        find . -not -path "./.git/*" -not -path "./thirdparty/*" -not -path "./docs/.venv/*" "$@" -exec rm -rf {} + 2>/dev/null || true
         printf '  %-6s  %s\n' "$count" "$label"
         total=$(( total + count ))
     fi
@@ -27,6 +27,9 @@ echo
 remove "build/obj dirs"      -type d -path "./build/obj"
 remove "object files"        -type f -name "*.o"
 remove "*.dSYM dirs"         -type d -name "*.dSYM"
+
+# Documentation
+remove "docs/_build dirs"    -type d -path "./docs/_build"
 
 # Claude
 remove ".claude dirs"        -type d -name ".claude"

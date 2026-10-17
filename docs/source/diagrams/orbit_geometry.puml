@@ -1,0 +1,27 @@
+@startuml orbit_geometry
+title Orbit parameters and their relationships
+
+object "Target circular orbit" as circ {
+  r_c = R + h_target
+  T_c = 2π·√(r_c³/μ)
+  v_c = √(μ/r_c)
+}
+
+object "Elliptical parking orbit" as ell {
+  T_e = (2/3)·T_c
+  a_e = r_c·(2/3)^(2/3) ≈ 0.76314·r_c
+  r_apo = r_c
+  r_peri = 2·a_e − r_c ≈ 0.52629·r_c
+  v_apo = √(μ·(2/r_apo − 1/a_e))
+  v_peri = √(μ·(2/r_peri − 1/a_e))
+}
+
+object "Safety limits" as safe {
+  factor = 2·(2/3)^(2/3) − 1 ≈ 0.52629
+  min_h_surface = R/factor − R
+  min_h_atm = (R + h_atm)/factor − R
+}
+
+circ --> ell : apoapsis touches\nthe circular orbit
+ell --> safe : periapsis must clear\nsurface / atmosphere
+@enduml
