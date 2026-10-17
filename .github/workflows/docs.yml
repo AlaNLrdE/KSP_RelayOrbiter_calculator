@@ -1,0 +1,73 @@
+name: Documentation
+
+# Builds the Sphinx documentation on every push and pull request, and
+# publishes it to GitHub Pages from master.
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PLANTUML_VERSION: 1.2026.2
+  PLANTUML_SHA256: 3cdce52133c424dea22425b947ae9d47f2167b0866dfcf99e714d4ea1689975c
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: docs/requirements.txt
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # The same PlantUML release used locally; Ubuntu's apt package is years
+      # older. Graphviz is needed for class and component diagrams.
+      - name: Install PlantUML
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq graphviz
+          curl -sSL -o /tmp/plantuml.jar \
+            "https://github.com/plantuml/plantuml/releases/download/v${PLANTUML_VERSION}/plantuml-${PLANTUML_VERSION}.jar"
+          echo "${PLANTUML_SHA256}  /tmp/plantuml.jar" | sha256sum --check
+          sudo install -m 644 /tmp/plantuml.jar /usr/local/lib/plantuml.jar
+          printf '#!/bin/sh\nexec java -Djava.awt.headless=true -jar /usr/local/lib/plantuml.jar "$@"\n' \
+            | sudo tee /usr/local/bin/plantuml > /dev/null
+          sudo chmod 755 /usr/local/bin/plantuml
+          plantuml -version
+
+      - name: Build HTML
+        run: make -C docs html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_build/html
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
