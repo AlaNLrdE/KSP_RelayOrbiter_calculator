@@ -19,8 +19,7 @@ htmlcov/
 .pyre/
 
 # ── Build / packaging ─────────────────────────────────────────────────────────
-build/
-!build/Makefile
+build/obj/
 dist/
 *.egg-info/
 *.egg

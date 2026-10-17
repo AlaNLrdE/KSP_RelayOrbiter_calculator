@@ -36,8 +36,8 @@ GMOCK_OBJ := $(BUILD)/obj/gmock-all.o
 GTMAIN_OBJ:= $(BUILD)/obj/gtest_main.o
 
 # ── Output binaries ───────────────────────────────────────────────────────────
-APP      := $(BUILD)/relay_calculator
-TEST_BIN := $(BUILD)/run_tests
+APP      := $(BUILD)/obj/relay_calculator
+TEST_BIN := $(BUILD)/obj/run_tests
 
 # ── Default target ────────────────────────────────────────────────────────────
 .PHONY: all
@@ -83,4 +83,4 @@ $(BUILD)/obj:
 # ── Clean ─────────────────────────────────────────────────────────────────────
 .PHONY: clean
 clean:
-	rm -rf $(BUILD)/obj $(APP) $(TEST_BIN)
+	rm -rf $(BUILD)/obj
