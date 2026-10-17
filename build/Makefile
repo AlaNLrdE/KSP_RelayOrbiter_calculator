@@ -59,6 +59,25 @@ test: $(TEST_BIN)
 $(TEST_BIN): $(TEST_OBJS) $(LIB_OBJS) $(GTEST_OBJ) $(GMOCK_OBJ) $(GTMAIN_OBJ)
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
+# ── Golden test vectors ───────────────────────────────────────────────────────
+# JSON results consumed by ports of the calculator (e.g. the C# KSP mod).
+TOOLS       := $(ROOT)/tools
+VECTORS_BIN := $(BUILD)/obj/export_vectors
+VECTORS     := $(BUILD)/obj/golden_vectors.json
+
+.PHONY: vectors
+vectors: $(VECTORS)
+
+$(VECTORS): $(VECTORS_BIN)
+	$< > $@
+	@echo "Wrote $@"
+
+$(VECTORS_BIN): $(BUILD)/obj/export_vectors.o $(LIB_OBJS)
+	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
+
+$(BUILD)/obj/export_vectors.o: $(TOOLS)/export_vectors.cpp | $(BUILD)/obj
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 # ── GoogleTest submodule ──────────────────────────────────────────────────────
 # Fetch the submodule on first build if its sources are missing.
 $(GTHDR):
