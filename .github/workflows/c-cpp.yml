@@ -14,6 +14,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: make app
-      run: build/make app
-    - name: build/make test
-      run: make test
+      run: cd build
+    - name: make app (con -C)
+      run: make -C build app
+    - name: make test (con -C)
+      run: make -C build test
