@@ -46,6 +46,7 @@ The Makefile lives in ``build/``. Run it from the repository root with
    make -C build          # build the app and the tests, then run the tests
    make -C build app      # build only the application
    make -C build test     # build and run only the tests
+   make -C build html     # build this documentation
    make -C build clean    # delete build/obj/
 
 .. list-table:: Make targets
@@ -61,6 +62,11 @@ The Makefile lives in ``build/``. Run it from the repository root with
    * - ``test``
      - Builds ``build/obj/run_tests`` and runs it. Fetches the GoogleTest
        submodule first if it is missing.
+   * - ``html``
+     - Builds this documentation by delegating to ``docs/Makefile``; see
+       :ref:`building-docs`.
+   * - ``docs-clean``
+     - Removes ``docs/_build``.
    * - ``clean``
      - Removes ``build/obj/`` — every object file and binary.
 
@@ -155,22 +161,42 @@ Building this documentation
 
 The documentation is a Sphinx project in ``docs/`` with PlantUML diagrams.
 
-Requirements:
-
-* Python 3.10+
-* PlantUML on ``PATH`` (``brew install plantuml`` on macOS; it brings its own
-  Java runtime and Graphviz).
-
-Then:
-
 .. code-block:: sh
 
+   make -C build html     # or, equivalently:
    make -C docs html
 
-The first run creates a virtual environment at ``docs/.venv`` and installs the
-packages listed in ``docs/requirements.txt`` (Sphinx, the Read the Docs
-theme, and ``sphinxcontrib-plantuml``). Output goes to
-``docs/_build/html/index.html``.
+Output goes to ``docs/_build/html/index.html``.
+
+Dependencies
+~~~~~~~~~~~~
+
+``make html`` checks — and where possible fetches — everything it needs before
+running Sphinx:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 35 40
+
+   * - Dependency
+     - Check
+     - If missing
+   * - Python 3.10+
+     - ``python3`` is on ``PATH`` and reports 3.10 or newer
+     - Stops with an error. Use ``PYTHON=/path/to/python3`` to pick another
+       interpreter.
+   * - PlantUML
+     - ``plantuml`` is on ``PATH`` and ``plantuml -version`` runs
+     - Runs ``brew install plantuml`` when Homebrew is available (it brings
+       its own Java runtime and Graphviz). Otherwise stops and prints the
+       install command for macOS, Debian/Ubuntu, and Fedora.
+   * - Sphinx, ``sphinx-rtd-theme``, ``sphinxcontrib-plantuml``
+     - ``docs/.venv`` exists and is newer than ``docs/requirements.txt``
+     - Creates ``docs/.venv``, upgrades ``pip``, and installs
+       ``docs/requirements.txt``. Editing the requirements file triggers a
+       reinstall on the next build.
+
+Run ``make -C docs check-deps`` to perform only the checks.
 
 .. list-table:: Documentation make targets
    :header-rows: 1
@@ -181,6 +207,9 @@ theme, and ``sphinxcontrib-plantuml``). Output goes to
    * - ``html`` *(default)*
      - Builds the HTML site. Warnings are treated as errors (``-W``), so a
        broken cross-reference or diagram fails the build.
+   * - ``check-deps``
+     - Checks Python and PlantUML (installing PlantUML with Homebrew if
+       needed) without building.
    * - ``venv``
      - Creates/updates ``docs/.venv`` only.
    * - ``linkcheck``

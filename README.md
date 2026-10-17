@@ -67,6 +67,8 @@ The Makefile lives in `build/`. Run it from the repository root with `make -C bu
 | `all` *(default)* | Builds the application and the test binary, then runs the tests. |
 | `app` | Builds only the application → `build/obj/relay_calculator`. Does **not** need GoogleTest. |
 | `test` | Builds and runs the GoogleTest suite → `build/obj/run_tests`. Fetches the GoogleTest submodule automatically if it is missing. |
+| `html` | Builds the Sphinx documentation → `docs/_build/html/`. Checks and installs its dependencies first (see [Documentation](#documentation)). |
+| `docs-clean` | Removes `docs/_build/`. |
 | `clean` | Removes `build/obj/` (all object files and binaries). |
 
 All build outputs go to `build/obj/`, which is git-ignored.
@@ -136,12 +138,20 @@ To run a subset, call the binary directly with a GoogleTest filter:
 
 Detailed documentation — user guide, orbital-mechanics derivation, architecture, per-class API reference, and PlantUML diagrams — is a Sphinx project in `docs/`.
 
-Requirements: Python 3.10+ and [PlantUML](https://plantuml.com) on `PATH` (`brew install plantuml` on macOS).
-
 ```sh
-make -C docs html                    # first run creates docs/.venv and installs Sphinx
+make -C build html                   # or: make -C docs html
 open docs/_build/html/index.html
 ```
+
+`make html` checks and fetches its dependencies before building:
+
+| Dependency | Check | If missing |
+|------------|-------|------------|
+| Python 3.10+ | `python3` on `PATH` and its version | Stops with an error (override with `PYTHON=/path/to/python3`). |
+| [PlantUML](https://plantuml.com) | `plantuml` on `PATH` and runnable | Installed with `brew install plantuml` when Homebrew is available; otherwise stops with install instructions for macOS / Debian / Fedora. |
+| Sphinx, Read the Docs theme, `sphinxcontrib-plantuml` | `docs/.venv` exists and is newer than `docs/requirements.txt` | Creates `docs/.venv` and installs `docs/requirements.txt`. |
+
+Nothing Python-related is installed system-wide; `make -C docs distclean` removes the build output and the virtual environment.
 
 ---
 

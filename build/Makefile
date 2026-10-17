@@ -88,6 +88,16 @@ $(BUILD)/obj/%.o: $(UTEST)/%.cpp | $(BUILD)/obj $(GTHDR)
 $(BUILD)/obj:
 	mkdir -p $@
 
+# ── Documentation ─────────────────────────────────────────────────────────────
+# Delegates to docs/Makefile, which checks Python and PlantUML (installing
+# PlantUML with Homebrew if missing) and sets up docs/.venv with Sphinx.
+.PHONY: html docs-clean
+html:
+	$(MAKE) -C $(ROOT)/docs html
+
+docs-clean:
+	$(MAKE) -C $(ROOT)/docs clean
+
 # ── Clean ─────────────────────────────────────────────────────────────────────
 .PHONY: clean
 clean:
