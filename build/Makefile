@@ -9,6 +9,7 @@ GTINC   := $(GTDIR)/googletest/include
 GTSRC   := $(GTDIR)/googletest/src
 GMINC   := $(GTDIR)/googlemock/include
 GMSRC   := $(GTDIR)/googlemock/src
+GTHDR   := $(GTINC)/gtest/gtest.h
 
 # ── Toolchain ─────────────────────────────────────────────────────────────────
 CXX      := g++
@@ -58,6 +59,13 @@ test: $(TEST_BIN)
 $(TEST_BIN): $(TEST_OBJS) $(LIB_OBJS) $(GTEST_OBJ) $(GMOCK_OBJ) $(GTMAIN_OBJ)
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
+# ── GoogleTest submodule ──────────────────────────────────────────────────────
+# Fetch the submodule on first build if its sources are missing.
+$(GTHDR):
+	git -C $(ROOT) submodule update --init --recursive
+
+$(GTSRC)/gtest-all.cc $(GMSRC)/gmock-all.cc $(GTSRC)/gtest_main.cc: $(GTHDR)
+
 # ── GTest / GMock objects ─────────────────────────────────────────────────────
 $(GTEST_OBJ): $(GTSRC)/gtest-all.cc | $(BUILD)/obj
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -73,7 +81,7 @@ $(BUILD)/obj/%.o: $(SRC)/%.cpp | $(BUILD)/obj
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # ── Test object rule ──────────────────────────────────────────────────────────
-$(BUILD)/obj/%.o: $(UTEST)/%.cpp | $(BUILD)/obj
+$(BUILD)/obj/%.o: $(UTEST)/%.cpp | $(BUILD)/obj $(GTHDR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # ── Directory creation ────────────────────────────────────────────────────────
