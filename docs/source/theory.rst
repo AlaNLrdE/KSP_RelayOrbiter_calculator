@@ -6,6 +6,12 @@ Orbital Mechanics
 This page derives every number the calculator reports. Symbols are listed in
 the :ref:`glossary`.
 
+.. figure:: ../images/orbit_geometry.svg
+   :alt: To-scale drawing of the circular and parking orbits
+   :width: 100%
+
+   Target circular orbit and carrier parking orbit, drawn to scale
+
 .. uml:: diagrams/orbit_geometry.puml
    :caption: How the orbit parameters relate to each other
 

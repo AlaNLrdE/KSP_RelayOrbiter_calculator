@@ -112,6 +112,9 @@ interfaces; domain depends only on value types and on
 Class model
 -----------
 
+.. uml:: diagrams/architecture_overview.puml
+   :caption: Interfaces, implementations, and how they are wired
+
 .. uml:: diagrams/class_overview.puml
    :caption: All classes, interfaces, and relationships
 

@@ -1,0 +1,43 @@
+@startuml architecture_overview
+title Interfaces, implementations, and dependency injection
+
+hide members
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 50
+
+class "main.cpp" as Main <<composition root>>
+class Application
+
+interface IBodyDatabase
+interface IConstellationCalculator
+interface IReportFormatter
+interface IOrbitalMechanics
+interface ITimeFormatter
+
+class KspBodyDatabase <<final>>
+class ConstellationCalculator <<final>>
+class ConsoleReportFormatter <<final>>
+class OrbitalMechanics <<final>>
+class KerbinTimeFormatter <<final>>
+
+Main ..> Application : constructs & injects
+Application --> IBodyDatabase
+Application --> IConstellationCalculator
+Application --> IReportFormatter
+
+IBodyDatabase <|.. KspBodyDatabase
+IConstellationCalculator <|.. ConstellationCalculator
+IReportFormatter <|.. ConsoleReportFormatter
+
+ConstellationCalculator --> IOrbitalMechanics
+ConsoleReportFormatter --> ITimeFormatter
+
+IOrbitalMechanics <|.. OrbitalMechanics
+ITimeFormatter <|.. KerbinTimeFormatter
+
+note right of Application
+  Interactive loop:
+  body → altitude → calculate → report
+end note
+@enduml

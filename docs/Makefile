@@ -60,6 +60,19 @@ html: check-deps $(STAMP)
 	@echo
 	@echo "Open $(OUTPUT)/html/index.html"
 
+# ── README images ─────────────────────────────────────────────────────────────
+# SVGs referenced by README.md, committed under docs/images/. Orbit figures are
+# drawn to scale by a stdlib-only script; the rest are PlantUML diagrams
+# rendered on a white background so they stay readable in GitHub dark mode.
+IMAGES        := $(DOCS)/images
+README_PUML   := architecture_overview body_hierarchy act_custom_altitude
+
+.PHONY: readme-images
+readme-images: check-deps
+	$(PYTHON) -I $(DOCS)/tools/orbit_figures.py $(IMAGES)
+	plantuml -config $(SOURCE)/diagrams/style.cfg -SbackgroundColor=white -tsvg \
+	    -o $(IMAGES) $(foreach d,$(README_PUML),$(SOURCE)/diagrams/$(d).puml)
+
 # ── Link check ────────────────────────────────────────────────────────────────
 .PHONY: linkcheck
 linkcheck: $(STAMP)
