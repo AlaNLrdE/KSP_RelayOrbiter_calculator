@@ -153,6 +153,8 @@ open docs/_build/html/index.html
 
 Nothing Python-related is installed system-wide; `make -C docs distclean` removes the build output and the virtual environment.
 
+The figures in this README live in `docs/images/`. Regenerate them after changing `docs/tools/orbit_figures.py` or the PlantUML sources with `make -C docs readme-images`.
+
 ---
 
 ## Example Session
@@ -227,14 +229,7 @@ Times are shown in the Kerbin calendar (6-hour day, 426-day year) followed by ra
 
 The goal is to deploy a relay network of 3 satellites in a circular orbit with equal angular spacing (120° apart), using one carrier ship that carries all three. The method avoids any need to measure angles in-flight — the geometry is guaranteed by choosing the correct parking orbit before launch.
 
-```
-Final constellation:
-
-        SAT-1 (0°)
-           │
-  SAT-3  ──●──  SAT-2
-  (240°)  Body  (120°)
-```
+<p align="center"><img src="docs/images/constellation.svg" alt="Final constellation: SAT-3 at 0°, SAT-1 at 120°, SAT-2 at 240° on a circular orbit" width="440"></p>
 
 ---
 
@@ -334,66 +329,25 @@ Minimum altitudes for selected bodies:
 
 ### Orbit Geometry
 
-```
-                  ┌──────── Circular orbit (r_c) ────────┐
-                  │                                       │
-                  │    ┌──── Elliptical parking orbit ──┐ │
-                  │    │      (carrier vessel)          │ │
-                  │    │                                │ │
-  Periapsis ──────┼────┤ ─────────── Body ──────────── ┤─┼── Apoapsis = r_c
-  (r_peri)        │    │              (●)               │ │  (release point)
-                  │    └────────────────────────────────┘ │
-                  │                                       │
-                  └───────────────────────────────────────┘
+<p align="center"><img src="docs/images/orbit_geometry.svg" alt="To-scale drawing of the target circular orbit and the carrier's elliptical parking orbit, with apoapsis on the circle and periapsis at 0.526 r_c" width="720"></p>
 
-  r_peri ≈ 0.526 × r_c
-  a_e    ≈ 0.763 × r_c
-  T_e    = (2/3) × T_c
-```
+| Quantity | Value |
+|----------|-------|
+| Apoapsis radius | `r_apo = r_c` (release point) |
+| Semi-major axis | `a_e = r_c · (2/3)^(2/3) ≈ 0.763 · r_c` |
+| Periapsis radius | `r_peri = 2·a_e − r_c ≈ 0.526 · r_c` |
+| Parking orbit period | `T_e = (2/3) · T_c` |
 
 ### Deployment Timeline
 
-```
-  t = 0  ──────────────────────────────────────────────────────
-    Position:  Carrier + SAT-1 both at apoapsis (0°)
-    Action:    SAT-1 released → circularizes at r_c
-               Carrier begins elliptical orbit (period T_e)
+<p align="center"><img src="docs/images/deployment.svg" alt="Four panels: release SAT-1 at t=0; at t=T_e SAT-1 has moved 240° and SAT-2 is released; at t=2T_e SAT-1 is at 120°, SAT-2 at 240° and SAT-3 is released; final constellation 120° apart" width="100%"></p>
 
-  t = T_e  ────────────────────────────────────────────────────
-    SAT-1 has traveled (2/3)×360° = 240° along circular orbit
-    Carrier is back at apoapsis (0°)
-
-    Circular orbit view:
-        SAT-1
-         240°
-          ●
-         /
-        /  120° gap  ← carrier arrives here
-       ●─────────────●
-      0°/360°       Body
-
-    Action:  SAT-2 released → circularizes at r_c
-             Carrier begins second elliptical orbit
-
-  t = 2·T_e  ──────────────────────────────────────────────────
-    SAT-1 has traveled another 240° → now at 480° = 120°
-    SAT-2 has traveled 240° from 0° → now at 240°
-    Carrier is back at apoapsis (0°)
-
-    Final deployment view:
-               SAT-1
-                120°
-                 ●
-                / \
-    SAT-2      /   \    0° ← carrier arrives here
-     240° ●───── ● ─────●
-               Body
-
-    Action:  SAT-3 released → circularizes at r_c
-
-  ✓ Final constellation: SAT-3=0°, SAT-1=120°, SAT-2=240°
-    Equal 120° spacing guaranteed by orbital mechanics alone.
-```
+| Time | Satellites already deployed | Action at apoapsis (0°) |
+|------|-----------------------------|-------------------------|
+| `t = 0` | — | Release SAT-1 |
+| `t = T_e` | SAT-1 at 240° | Release SAT-2 |
+| `t = 2·T_e` | SAT-1 at 120°, SAT-2 at 240° | Release SAT-3 |
+| Done | SAT-3 at 0°, SAT-1 at 120°, SAT-2 at 240° | Equal 120° spacing, guaranteed by orbital mechanics alone |
 
 ---
 
@@ -430,22 +384,7 @@ KSP_RelayOrbiter_calculator/
 
 The program is built around small interfaces with one concrete implementation each, wired together in `main.cpp` (the composition root):
 
-```
-                         main.cpp
-                            │  constructs & injects
-                            ▼
-                       Application  ── interactive loop (body → altitude → report)
-          ┌─────────────────┼──────────────────────┐
-          ▼                 ▼                      ▼
-   IBodyDatabase   IConstellationCalculator   IReportFormatter
-          │                 │                      │
-   KspBodyDatabase  ConstellationCalculator  ConsoleReportFormatter
-                            │                      │
-                            ▼                      ▼
-                    IOrbitalMechanics         ITimeFormatter
-                            │                      │
-                    OrbitalMechanics       KerbinTimeFormatter
-```
+<p align="center"><img src="docs/images/architecture_overview.svg" alt="Class diagram: main.cpp injects KspBodyDatabase, ConstellationCalculator and ConsoleReportFormatter into Application through interfaces; ConstellationCalculator depends on IOrbitalMechanics and ConsoleReportFormatter on ITimeFormatter" width="560"></p>
 
 Design principles applied:
 
@@ -561,25 +500,7 @@ The interactive loop: select a body → choose an altitude from a context-aware 
 
 The parent-child graph encoded in the `parent` fields:
 
-```
-Kerbol
-├── Moho
-├── Eve
-│   └── Gilly
-├── Kerbin
-│   ├── Mun
-│   └── Minmus
-├── Duna
-│   └── Ike
-├── Dres
-├── Jool
-│   ├── Laythe
-│   ├── Vall
-│   ├── Tylo
-│   ├── Bop
-│   └── Pol
-└── Eeloo
-```
+<p align="center"><img src="docs/images/body_hierarchy.svg" alt="Body hierarchy: Kerbol with planets Moho, Eve (Gilly), Kerbin (Mun, Minmus), Duna (Ike), Dres, Jool (Laythe, Vall, Tylo, Bop, Pol) and Eeloo" width="620"></p>
 
 ### `OrbitalResult`
 
@@ -617,27 +538,18 @@ Accepts either the menu number or the exact (case-sensitive) body name. Bodies a
 
 The menu is built at runtime from the selected body:
 
-```
-  1. Synchronous orbit             → always present
-  2. At a moon's/planet's distance → only if the body has children
-  3. Midpoint between two …        → only if the body has ≥ 2 children
-  4. Custom altitude               → always present (last option)
-```
+| # | Option | Shown when |
+|---|--------|------------|
+| 1 | Synchronous orbit | Always |
+| 2 | At a moon's / planet's orbital distance | The body has at least one child |
+| 3 | Midpoint between two moons / planets | The body has two or more children |
+| 4 | Custom altitude | Always (last option) |
 
 For the midpoint option, the same child cannot be picked twice.
 
 ### Custom altitude validation chain
 
-```
-User input (km, string)
-  │
-  ├─ Not a number?              → re-prompt
-  ├─ ≤ 0?                       → re-prompt
-  ├─ < atmosphere ceiling?      → re-prompt with atmosphere height
-  └─ > SOI max altitude?        → re-prompt with SOI limit
-
-  → double in metres
-```
+<p align="center"><img src="docs/images/act_custom_altitude.svg" alt="Activity diagram: read altitude in km; re-prompt if not a number, not positive, inside the atmosphere, or above the SOI limit; otherwise return metres" width="520"></p>
 
 ### Bodies with synchronous orbit outside SOI
 

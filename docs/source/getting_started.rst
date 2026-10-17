@@ -212,6 +212,10 @@ Run ``make -C docs check-deps`` to perform only the checks.
        needed) without building.
    * - ``venv``
      - Creates/updates ``docs/.venv`` only.
+   * - ``readme-images``
+     - Regenerates the SVGs in ``docs/images/`` used by ``README.md`` and
+       these pages: the to-scale orbit figures (``docs/tools/orbit_figures.py``)
+       and selected PlantUML diagrams rendered on a white background.
    * - ``linkcheck``
      - Checks external links.
    * - ``clean``

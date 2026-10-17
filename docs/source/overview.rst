@@ -33,6 +33,18 @@ circular orbit — leaving the carrier exactly :math:`120°` behind it. Releasin
 the second and third satellites on the next two passes completes an evenly
 spaced constellation without ever measuring an angle in flight.
 
+.. figure:: ../images/deployment.svg
+   :alt: Deployment sequence in four panels
+   :width: 100%
+
+   Deployment sequence — one release per parking orbit
+
+.. figure:: ../images/constellation.svg
+   :alt: Final constellation 120 degrees apart
+   :width: 420px
+
+   The resulting constellation
+
 .. uml:: diagrams/seq_deployment.puml
    :caption: In-game deployment procedure
 
