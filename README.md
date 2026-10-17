@@ -1,40 +1,201 @@
 # KSP Relay Satellite Constellation Calculator
 
-An interactive CLI tool that computes the orbital parameters needed to deploy **3 relay satellites evenly spaced 120° apart** using a single carrier vessel — no manual timing, no mods required.
+An interactive C++20 command-line tool that computes the orbital parameters needed to deploy **3 relay satellites evenly spaced 120° apart** using a single carrier vessel — no manual timing, no mods required.
 
 ---
 
 ## Table of Contents
 
 1. [Quick Start](#quick-start)
-2. [Use Case](#use-case)
-3. [Orbital Mechanics](#orbital-mechanics)
+2. [Building](#building)
+   - [Prerequisites](#prerequisites)
+   - [Make Targets](#make-targets)
+   - [GoogleTest Dependency](#googletest-dependency)
+   - [Choosing a Compiler](#choosing-a-compiler)
+   - [Troubleshooting](#troubleshooting)
+3. [Running the Tests](#running-the-tests)
+4. [Example Session](#example-session)
+5. [Use Case](#use-case)
+6. [Orbital Mechanics](#orbital-mechanics)
    - [The Core Constraint](#the-core-constraint)
    - [Deriving the Parking Orbit](#deriving-the-parking-orbit)
    - [Minimum Safe Altitude](#minimum-safe-altitude)
-4. [Deployment Diagrams](#deployment-diagrams)
+7. [Deployment Diagrams](#deployment-diagrams)
    - [Orbit Geometry](#orbit-geometry)
    - [Deployment Timeline](#deployment-timeline)
-5. [Program Structure](#program-structure)
-6. [Function Reference](#function-reference)
-7. [Data Model](#data-model)
-8. [Design Patterns](#design-patterns)
-9. [Input Validation & Edge Cases](#input-validation--edge-cases)
-10. [Performance Metrics](#performance-metrics)
-11. [Supported Bodies](#supported-bodies)
+8. [Project Layout](#project-layout)
+9. [Architecture](#architecture)
+10. [API Reference](#api-reference)
+11. [Data Model](#data-model)
+12. [Input Validation & Edge Cases](#input-validation--edge-cases)
+13. [Performance](#performance)
+14. [Extending the Calculator](#extending-the-calculator)
+15. [Supported Bodies](#supported-bodies)
 
 ---
 
 ## Quick Start
 
-```
-make -C build app
-./build/obj/relay_calculator
+```sh
+git clone --recurse-submodules <repo-url>
+cd KSP_RelayOrbiter_calculator
+make -C build                  # builds the app and runs the test suite
+./build/obj/relay_calculator   # start the interactive calculator
 ```
 
-Requires a C++20 compiler. Run the test suite with `make -C build test`.
+---
 
-> The original Python implementation (`python/`) has been deprecated and removed in favour of the C++20 port.
+## Building
+
+### Prerequisites
+
+| Requirement | Notes |
+|-------------|-------|
+| C++20 compiler | GCC 10+ or Clang 13+ (uses `<numbers>`, designated initializers, `std::optional`). Apple Clang from the Xcode Command Line Tools works. |
+| GNU Make | 3.81 or newer (the version that ships with macOS is fine). |
+| Git | Needed to fetch the GoogleTest submodule for the test build. |
+
+No other external libraries are required to build or run the application.
+
+### Make Targets
+
+The Makefile lives in `build/`. Run it from the repository root with `make -C build <target>`, or `cd build && make <target>`.
+
+| Target | Description |
+|--------|-------------|
+| `all` *(default)* | Builds the application and the test binary, then runs the tests. |
+| `app` | Builds only the application → `build/obj/relay_calculator`. Does **not** need GoogleTest. |
+| `test` | Builds and runs the GoogleTest suite → `build/obj/run_tests`. Fetches the GoogleTest submodule automatically if it is missing. |
+| `clean` | Removes `build/obj/` (all object files and binaries). |
+
+All build outputs go to `build/obj/`, which is git-ignored.
+
+### GoogleTest Dependency
+
+GoogleTest is included as a **git submodule** at `thirdparty/googletest`, pinned to a specific commit. The `.gitmodules` file only records *where* the submodule lives and *where to fetch it from* — a plain `git clone` leaves the folder empty.
+
+You don't need to do anything special: the first `make test` (or `make`) detects the missing headers and runs
+
+```sh
+git submodule update --init --recursive
+```
+
+before compiling. To fetch it up front instead, either clone with `--recurse-submodules` or run the command above yourself.
+
+GoogleTest and GoogleMock are compiled directly from source (`gtest-all.cc`, `gmock-all.cc`, `gtest_main.cc`) — there is no CMake step and nothing is installed system-wide.
+
+### Choosing a Compiler
+
+The Makefile defaults to `g++`. Override it on the command line:
+
+```sh
+make -C build CXX=clang++
+make -C build CXX=g++-14
+```
+
+Run `make -C build clean` after switching compilers so stale object files are rebuilt.
+
+### Troubleshooting
+
+| Symptom | Cause / Fix |
+|---------|-------------|
+| `fatal error: 'gtest/gtest.h' file not found` | The GoogleTest submodule is not checked out and the automatic fetch failed (e.g. no network). Run `git submodule update --init --recursive` manually. |
+| `git submodule status` shows a leading `-` | Submodule registered but not initialized — same fix as above. |
+| `error: no member named 'numbers' in namespace 'std'` | Compiler too old or not in C++20 mode. Upgrade the compiler or pass a newer one via `CXX=`. |
+| Changes to a header don't trigger a rebuild | The Makefile does not track header dependencies. Run `make -C build clean` and rebuild. |
+
+---
+
+## Running the Tests
+
+```sh
+make -C build test
+```
+
+The suite uses [GoogleTest](https://github.com/google/googletest) and currently contains **66 tests across 4 suites**:
+
+| Suite | Tests | Covers |
+|-------|------:|--------|
+| `OrbitalMechanics` | 15 | Kepler period, vis-viva, synchronous altitude, SOI limit |
+| `KspBodyDatabase` | 19 | Body lookup, catalogue completeness, `children_of()` ordering |
+| `ConstellationCalculator` | 20 | Parking-orbit derivation, velocities, safety flags, minimum altitudes |
+| `KerbinTimeFormatter` | 12 | Kerbin calendar formatting and rounding boundaries |
+
+Shared test bodies (Kerbin, Mun, Kerbol) live in `utest/TestFixtures.hpp`, so math-only tests don't depend on `KspBodyDatabase`.
+
+To run a subset, call the binary directly with a GoogleTest filter:
+
+```sh
+./build/obj/run_tests --gtest_filter='ConstellationCalculator.*'
+```
+
+---
+
+## Example Session
+
+Selecting Kerbin with a custom 1000 km altitude:
+
+```
+Select body (number or name): Kerbin
+
+Target circular orbit altitude above Kerbin  (atmosphere ends at 70 km)
+  1. Synchronous orbit  ->  2863.33 km
+  2. At a moon's orbital distance
+  3. Midpoint between two moons
+  4. Custom altitude
+
+  Option [1-4]: 4
+  Altitude [km]: 1000
+
+==============================================================
+  RESULTS — Kerbin / target altitude 1000.00 km
+==============================================================
+
+  CIRCULAR ORBIT  (final satellite orbit)
+  ------------------------------------------------------------
+  Altitude                        : 1000.00  km
+  Radius                          : 1600.00  km
+  Orbital velocity                : 1485.682  m/s
+  Orbital period                  : 0y 0d 1h 52m 46.7s  (6766.66 s)
+
+  ELLIPTICAL PARKING ORBIT  (carrier vessel)
+  ------------------------------------------------------------
+  Apoapsis altitude               : 1000.00  km  (= target)
+  Apoapsis radius                 : 1600.00  km
+  Periapsis altitude              : 242.06  km  OK
+  Periapsis radius                : 842.06  km
+  Semi-major axis                 : 1221.03  km
+  Orbital period                  : 0y 0d 1h 15m 11.1s  (4511.10 s)
+  T_e / T_c ratio                 : 0.666667  (target 0.666667)
+
+  VELOCITIES
+  ------------------------------------------------------------
+  Circular orbit (at apoapsis alt): 1485.682  m/s
+  Carrier at apoapsis             : 1233.768  m/s
+  Carrier at periapsis            : 2344.294  m/s
+
+  DEPLOYMENT PROCEDURE
+  ------------------------------------------------------------
+   1. Circularize carrier at 1000.00 km.
+   2. Burn retrograde at apoapsis to set periapsis to 242.06 km.
+       (carrier is now in the elliptical parking orbit)
+   3. At apoapsis: release SAT-1.  SAT-1 circularizes.
+   4. Carrier completes 1 elliptical orbit  (0y 0d 1h 15m 11.1s).
+       -> SAT-1 is now 120 deg ahead at apoapsis.
+   5. At apoapsis: release SAT-2.  SAT-2 circularizes.
+   6. Carrier completes 1 more elliptical orbit  (0y 0d 1h 15m 11.1s).
+       -> SAT-1 at 120 deg, SAT-2 at 240 deg ahead.
+   7. At apoapsis: release SAT-3.  SAT-3 circularizes.
+   8. Constellation complete: 3 satellites, 120 deg spacing.
+
+==============================================================
+
+Calculate for another body/altitude? [y/N]: n
+
+Good luck with the mission!
+```
+
+Times are shown in the Kerbin calendar (6-hour day, 426-day year) followed by raw seconds.
 
 ---
 
@@ -104,7 +265,7 @@ The periapsis follows from the definition of semi-major axis:
 a_e = (r_apo + r_peri) / 2
 r_peri = 2 × a_e − r_apo
        = r_c × (2 × (2/3)^(2/3) − 1)
-       ≈ r_c × 0.52628
+       ≈ r_c × 0.52629
 ```
 
 Orbital velocities at each key point are computed via the **vis-viva equation**:
@@ -117,24 +278,31 @@ Where `μ` is the body's standard gravitational parameter (GM).
 
 ### Minimum Safe Altitude
 
-The periapsis must clear the body's surface (and atmosphere). Setting `r_peri > R_body`:
+The periapsis must clear the body's surface (and atmosphere, if any). Setting `r_peri > R_body`:
 
 ```
-r_c × 0.52628 > R_body
-r_c > R_body / 0.52628 ≈ 1.9002 × R_body
-h_target > 0.9002 × R_body
+r_c × 0.52629 > R_body
+r_c > R_body / 0.52629 ≈ 1.9001 × R_body
+h_target > 0.9001 × R_body
+```
+
+For bodies with an atmosphere, the periapsis must instead clear `R_body + h_atm`, which is always the stricter limit:
+
+```
+h_target > (R_body + h_atm) / 0.52629 − R_body
 ```
 
 Minimum altitudes for selected bodies:
 
-| Body   | Min altitude (surface) | Atmosphere top | Binding constraint |
-|--------|------------------------|----------------|--------------------|
-| Kerbin | 540.1 km               | 70 km          | 540.1 km           |
-| Mun    | 180.0 km               | none           | 180.0 km           |
-| Minmus | 54.0 km                | none           | 54.0 km            |
-| Duna   | 288.0 km               | 50 km          | 288.0 km           |
-| Eve    | 630.1 km               | 90 km          | 630.1 km           |
-| Jool   | 5,400.7 km             | 200 km         | 5,400.7 km         |
+| Body   | Min altitude (surface) | Atmosphere top | Min altitude (atmosphere) | Binding constraint |
+|--------|------------------------|----------------|---------------------------|--------------------|
+| Kerbin | 540.1 km               | 70 km          | 673.1 km                  | 673.1 km           |
+| Mun    | 180.0 km               | none           | —                         | 180.0 km           |
+| Minmus | 54.0 km                | none           | —                         | 54.0 km            |
+| Duna   | 288.0 km               | 50 km          | 383.0 km                  | 383.0 km           |
+| Eve    | 630.1 km               | 90 km          | 801.1 km                  | 801.1 km           |
+| Laythe | 450.1 km               | 50 km          | 545.1 km                  | 545.1 km           |
+| Jool   | 5,400.7 km             | 200 km         | 5,780.7 km                | 5,780.7 km         |
 
 ---
 
@@ -205,63 +373,91 @@ Minimum altitudes for selected bodies:
 
 ---
 
-## Program Structure
+## Project Layout
 
 ```
-relay_calculator.py
-│
-├── BODIES                   Static database dict (17 bodies)
-├── KERBIN_HOUR/DAY/YEAR     Kerbin calendar constants
-│
-├── ── Pure math helpers ──────────────────────────────────────
-│   ├── fmt_time(s)          Seconds → Kerbin "Xy Xd Xh Xm Xs"
-│   ├── orbital_period(a,μ)  Kepler: T = 2π√(a³/μ)
-│   ├── vis_viva(r,a,μ)      Orbital speed at any point
-│   ├── sync_orbit_altitude  Geostationary/synchronous h
-│   ├── soi_max_altitude     Max safe altitude (SOI−R)
-│   └── children_of(name)    Bodies orbiting this body, sorted
-│
-├── ── UI layer ───────────────────────────────────────────────
-│   ├── select_body()        Interactive body chooser
-│   └── ask_altitude()       Context-aware altitude menu
-│       ├── option: sync orbit (always shown)
-│       ├── option: child body's orbital altitude (if kids > 0)
-│       ├── option: midpoint between two children (if kids ≥ 2)
-│       └── option: custom altitude (always shown)
-│
-├── ── Core calculation ───────────────────────────────────────
-│   └── calculate(name,body,h) → dict
-│       Applies the T_e=(2/3)T_c derivation; returns all
-│       orbital parameters, safety flags, and min-altitude hints
-│
-├── ── Output ─────────────────────────────────────────────────
-│   └── print_report(r)      Formatted sections + warnings
-│
-└── main()                   REPL loop (repeat or exit)
+KSP_RelayOrbiter_calculator/
+├── build/
+│   ├── Makefile                     Build, test, and clean targets
+│   └── obj/                         Build outputs (git-ignored)
+├── hpp/                             Public headers
+│   ├── CelestialBody.hpp            Body data struct
+│   ├── OrbitalResult.hpp            Calculation result value object
+│   ├── IOrbitalMechanics.hpp        ┐
+│   ├── IBodyDatabase.hpp            │
+│   ├── IConstellationCalculator.hpp │ Interfaces
+│   ├── IReportFormatter.hpp         │
+│   ├── ITimeFormatter.hpp           ┘
+│   ├── OrbitalMechanics.hpp         ┐
+│   ├── KspBodyDatabase.hpp          │
+│   ├── ConstellationCalculator.hpp  │ Concrete implementations
+│   ├── ConsoleReportFormatter.hpp   │
+│   ├── KerbinTimeFormatter.hpp      ┘
+│   └── Application.hpp              Interactive CLI orchestrator
+├── src/                             Implementations (+ main.cpp)
+├── utest/                           GoogleTest suites + TestFixtures.hpp
+└── thirdparty/googletest/           GoogleTest git submodule
 ```
 
 ---
 
-## Function Reference
+## Architecture
 
-### `orbital_period(a, mu) → float`
+The program is built around small interfaces with one concrete implementation each, wired together in `main.cpp` (the composition root):
+
+```
+                         main.cpp
+                            │  constructs & injects
+                            ▼
+                       Application  ── interactive loop (body → altitude → report)
+          ┌─────────────────┼──────────────────────┐
+          ▼                 ▼                      ▼
+   IBodyDatabase   IConstellationCalculator   IReportFormatter
+          │                 │                      │
+   KspBodyDatabase  ConstellationCalculator  ConsoleReportFormatter
+                            │                      │
+                            ▼                      ▼
+                    IOrbitalMechanics         ITimeFormatter
+                            │                      │
+                    OrbitalMechanics       KerbinTimeFormatter
+```
+
+Design principles applied:
+
+| Principle | Where |
+|-----------|-------|
+| **Single Responsibility** | Math (`OrbitalMechanics`), data (`KspBodyDatabase`), derivation (`ConstellationCalculator`), output (`ConsoleReportFormatter`), time formatting (`KerbinTimeFormatter`), and I/O flow (`Application`) are separate classes. |
+| **Dependency Inversion** | Every class depends on interfaces received via `std::shared_ptr` constructor injection; only `main.cpp` names concrete types. |
+| **Interface Segregation** | Each interface exposes only what its consumers need (e.g. `IBodyDatabase` is read-only). |
+| **Open/Closed** | A new calendar, output format, or body catalogue is a new class implementing an existing interface — `Application` stays unchanged. |
+| **Data-driven** | All body parameters live in one static table in `KspBodyDatabase.cpp`; menus, SOI checks, and child-body options derive from it. |
+
+Value types (`CelestialBody`, `OrbitalResult`) are plain structs with no behaviour, which keeps the calculation pure and easy to assert on in tests.
+
+---
+
+## API Reference
+
+### `IOrbitalMechanics`
+
+#### `double orbital_period(double semi_major_axis, double mu) const`
 
 ```
 T = 2π √(a³ / μ)
 ```
 
-- `a`: semi-major axis (m)
+- `semi_major_axis`: semi-major axis (m)
 - `mu`: gravitational parameter GM (m³/s²)
 - Returns: period in seconds
 
-### `vis_viva(r, a, mu) → float`
+#### `double vis_viva(double r, double semi_major_axis, double mu) const`
 
 ```
 v = √(μ × (2/r − 1/a))
 ```
 
 - `r`: current orbital radius (m)
-- `a`: semi-major axis of the orbit (m)
+- `semi_major_axis`: semi-major axis of the orbit (m)
 - `mu`: gravitational parameter (m³/s²)
 - Returns: orbital speed (m/s)
 
@@ -270,7 +466,7 @@ Special cases:
 - At apoapsis of the parking orbit: `r = r_c`, `a = a_e`
 - At periapsis of the parking orbit: `r = r_peri`, `a = a_e`
 
-### `sync_orbit_altitude(body) → float | None`
+#### `std::optional<double> sync_orbit_altitude(const CelestialBody& body) const`
 
 Derives the synchronous (geostationary) orbit altitude from the body's sidereal rotation period:
 
@@ -279,72 +475,66 @@ r_sync = (μ × (T_rot / 2π)²)^(1/3)
 h_sync = r_sync − R_body
 ```
 
-Returns `None` if the resulting altitude is below the surface or inside the atmosphere. Does **not** check SOI — that is handled by the caller.
+The interface allows `std::nullopt` for an unusable sync orbit; the current `OrbitalMechanics` implementation always returns a value. SOI is **not** checked here — `Application` compares the result against `soi_max_altitude()`.
 
-### `soi_max_altitude(body) → float | None`
+#### `std::optional<double> soi_max_altitude(const CelestialBody& body) const`
 
 ```
 h_SOI_max = SOI_radius − R_body
 ```
 
-Returns `None` for Kerbol (no practical SOI limit from the calculator's perspective).
+Returns `std::nullopt` for Kerbol (no SOI limit).
 
-### `children_of(body_name) → list[tuple[str, dict]]`
+### `IBodyDatabase`
 
-Filters `BODIES` for all entries whose `parent` matches `body_name`, then sorts by `orbital_radius` ascending. Used to populate the "at child's orbital distance" and "midpoint between two children" menu options.
+| Method | Description |
+|--------|-------------|
+| `std::optional<CelestialBody> find(std::string_view name) const` | Exact, case-sensitive name lookup. |
+| `std::vector<CelestialBody> all() const` | Every body in catalogue order. |
+| `std::vector<CelestialBody> children_of(std::string_view parent) const` | Direct children sorted by `orbital_radius` ascending. Drives the "moon/planet orbital distance" and "midpoint" menu options. |
 
-### `calculate(body_name, body, h_target) → dict`
+### `IConstellationCalculator`
 
-The core engine. All inputs are scalars; output is a plain dict.
+#### `OrbitalResult calculate(const CelestialBody& body, double h_target) const`
 
-| Output key    | Description                                   |
-|---------------|-----------------------------------------------|
-| `r_c`         | Circular orbit radius (m)                     |
-| `T_c`         | Circular orbit period (s)                     |
-| `v_c`         | Circular orbit velocity (m/s)                 |
-| `T_e`         | Elliptical orbit period (s) = (2/3)·T_c       |
-| `a_e`         | Elliptical orbit semi-major axis (m)           |
-| `r_apo`       | Apoapsis radius = r_c (m)                     |
-| `r_peri`      | Periapsis radius (m)                          |
-| `h_peri`      | Periapsis altitude above surface (m)          |
-| `v_apo`       | Carrier velocity at apoapsis (m/s)            |
-| `v_peri`      | Carrier velocity at periapsis (m/s)           |
-| `surface_ok`  | `True` if periapsis is above the surface      |
-| `atm_ok`      | `True` if periapsis clears the atmosphere     |
-| `min_h_surface` | Minimum target altitude for periapsis > 0  |
-| `min_h_atm`   | Minimum target altitude for periapsis > atm   |
+The core engine. Takes a body and a target circular altitude in metres, applies the `T_e = (2/3)·T_c` derivation, and returns a fully populated [`OrbitalResult`](#orbitalresult). No I/O, no side effects.
 
-### `ask_altitude(body_name, body) → float`
+### `IReportFormatter`
 
-Dynamically builds the altitude menu based on the body's properties:
+#### `void print(const OrbitalResult& result) const`
 
-```
-Menu options shown:
-  1. Synchronous orbit           → always present
-  2. At a child's orbital dist.  → only if children_of() is non-empty
-  3. Midpoint between two child. → only if len(children_of()) ≥ 2
-  4. Custom altitude             → always present (last option)
-```
+`ConsoleReportFormatter` writes the four report sections (circular orbit, parking orbit, velocities, deployment procedure) to stdout, plus a warning block when the periapsis is unsafe.
 
-All returned altitudes are in **metres**.
+### `ITimeFormatter`
+
+#### `std::string format(double seconds) const`
+
+`KerbinTimeFormatter` renders seconds as `Xy Xd Xh Xm X.Xs` using a 6-hour day and 426-day year.
+
+### `Application`
+
+#### `void run()`
+
+The interactive loop: select a body → choose an altitude from a context-aware menu → calculate → print the report → repeat or exit.
 
 ---
 
 ## Data Model
 
-Each entry in `BODIES` is a dict with these fields:
+### `CelestialBody`
 
-| Field           | Type          | Unit    | Description                                           |
-|-----------------|---------------|---------|-------------------------------------------------------|
-| `radius`        | `float`       | m       | Mean equatorial radius                                |
-| `mu`            | `float`       | m³/s²   | Standard gravitational parameter (GM)                 |
-| `atm`           | `float`       | m       | Altitude of atmosphere top (0 if none)                |
-| `rot_period`    | `float`       | s       | Sidereal rotation period                              |
-| `soi`           | `float\|None` | m       | Sphere of Influence radius (`None` for Kerbol)        |
-| `orbital_radius`| `float\|None` | m       | Semi-major axis of orbit around parent (`None` for Kerbol) |
-| `parent`        | `str\|None`   | —       | Name of parent body (`None` for Kerbol)               |
+| Field            | Type                         | Unit  | Description                                             |
+|------------------|------------------------------|-------|---------------------------------------------------------|
+| `name`           | `std::string`                | —     | Body name                                               |
+| `radius`         | `double`                     | m     | Mean equatorial radius                                  |
+| `mu`             | `double`                     | m³/s² | Standard gravitational parameter (GM)                   |
+| `atm`            | `double`                     | m     | Altitude of atmosphere top (0 if none)                  |
+| `rot_period`     | `double`                     | s     | Sidereal rotation period                                |
+| `soi`            | `std::optional<double>`      | m     | Sphere of Influence radius (`nullopt` for Kerbol)       |
+| `orbital_radius` | `std::optional<double>`      | m     | Semi-major axis of orbit around parent (`nullopt` for Kerbol) |
+| `parent`         | `std::optional<std::string>` | —     | Name of parent body (`nullopt` for Kerbol)              |
 
-The parent-child graph encoded in `parent` fields:
+The parent-child graph encoded in the `parent` fields:
 
 ```
 Kerbol
@@ -366,164 +556,144 @@ Kerbol
 └── Eeloo
 ```
 
----
+### `OrbitalResult`
 
-## Design Patterns
+All distances in metres, times in seconds, velocities in m/s.
 
-### Data-Driven Design
-
-All body parameters live in a single `BODIES` dict. Adding a new body (e.g., from a mod) requires adding exactly one dict entry — no code changes anywhere else. The UI, calculations, SOI checks, and child-body menus all derive their behavior from that entry automatically.
-
-### Layered Architecture
-
-The code is organized into four non-overlapping layers with one-way dependencies:
-
-```
-  Database (BODIES)
-       ↓
-  Pure math helpers  (no I/O, no side effects)
-       ↓
-  UI layer           (reads input, calls helpers)
-       ↓
-  calculate()        (pure function, no I/O)
-       ↓
-  print_report()     (output only)
-       ↓
-  main()             (REPL loop, calls all layers)
-```
-
-### Dynamic Menu Builder
-
-`ask_altitude()` builds its option list at runtime by inspecting the body:
-
-```python
-menu = []
-menu.append(("Synchronous orbit ...", "sync"))         # always
-if kids:
-    menu.append(("At a child's orbital distance", ...)) # conditional
-    if len(kids) >= 2:
-        menu.append(("Midpoint between two ...", ...))  # conditional
-menu.append(("Custom altitude", "custom"))              # always
-```
-
-This avoids `if body_name == "Kerbol":` branches scattered through the code. The same logic works for any body with children (Jool, Kerbin, Duna, Eve).
-
-### Guard Clauses
-
-Validation in `ask_altitude()` uses early-continue guards rather than nested conditionals:
-
-```python
-if h_sync is None:
-    print("...below surface...")
-    continue
-if h_soi_max is not None and h_sync > h_soi_max:
-    print("...exceeds SOI...")
-    continue
-return h_sync   # only reached when all checks pass
-```
-
-### Pure Calculation Function
-
-`calculate()` takes only scalar inputs and returns a plain dict with no side effects. This makes it trivially testable and reusable (e.g., for a future batch/file mode).
+| Field           | Description                                          |
+|-----------------|------------------------------------------------------|
+| `body_name`     | Name of the body                                     |
+| `h_target`      | Target circular orbit altitude                       |
+| `r_c`           | Circular orbit radius                                |
+| `T_c`           | Circular orbit period                                |
+| `v_c`           | Circular orbit velocity                              |
+| `T_e`           | Elliptical orbit period = (2/3)·T_c                  |
+| `a_e`           | Elliptical orbit semi-major axis                     |
+| `r_apo` / `h_apo` | Apoapsis radius / altitude (= `r_c` / `h_target`)  |
+| `r_peri` / `h_peri` | Periapsis radius / altitude                      |
+| `v_apo`         | Carrier velocity at apoapsis                         |
+| `v_peri`        | Carrier velocity at periapsis                        |
+| `surface_ok`    | `true` if periapsis is above the surface             |
+| `atm_ok`        | `true` if periapsis clears the atmosphere (or none)  |
+| `min_h_surface` | Minimum `h_target` for periapsis above the surface   |
+| `min_h_atm`     | Minimum `h_target` for periapsis above the atmosphere (`nullopt` if no atmosphere) |
 
 ---
 
 ## Input Validation & Edge Cases
 
-Every user input goes through multi-stage validation before reaching `calculate()`.
+Every user input is validated before it reaches `calculate()`; invalid input re-prompts instead of exiting.
 
-### Altitude validation chain
+### Body selection
+
+Accepts either the menu number or the exact (case-sensitive) body name. Bodies are listed alphabetically.
+
+### Altitude menu
+
+The menu is built at runtime from the selected body:
 
 ```
-User input (string)
+  1. Synchronous orbit             → always present
+  2. At a moon's/planet's distance → only if the body has children
+  3. Midpoint between two …        → only if the body has ≥ 2 children
+  4. Custom altitude               → always present (last option)
+```
+
+For the midpoint option, the same child cannot be picked twice.
+
+### Custom altitude validation chain
+
+```
+User input (km, string)
   │
   ├─ Not a number?              → re-prompt
-  ├─ ≤ 0?                      → re-prompt
+  ├─ ≤ 0?                       → re-prompt
   ├─ < atmosphere ceiling?      → re-prompt with atmosphere height
   └─ > SOI max altitude?        → re-prompt with SOI limit
 
-  → float in metres, guaranteed safe
+  → double in metres
 ```
 
 ### Bodies with synchronous orbit outside SOI
 
 9 of the 17 bodies have synchronous orbits that exceed their SOI:
 
-| Body   | Sync orbit | SOI limit | Ratio |
-|--------|-----------|-----------|-------|
-| Mun    | 2,970.6 km | 2,229.6 km | 1.33× |
-| Minmus | 3,670.4 km | 2,187.4 km | 1.68× |
-| Ike    | 1,133.9 km |   919.6 km | 1.23× |
-| Vall   | 3,593.2 km | 2,106.4 km | 1.71× |
-| Bop    | 2,588.2 km | 1,156.1 km | 2.24× |
-| Pol    | 2,415.1 km |   998.1 km | 2.42× |
-| Laythe | 4,686.3 km | 3,223.6 km | 1.45× |
+| Body   | Sync orbit  | SOI limit   | Ratio |
+|--------|-------------|-------------|-------|
+| Mun    | 2,970.6 km  | 2,229.6 km  | 1.33× |
+| Minmus | 3,670.4 km  | 2,187.4 km  | 1.68× |
+| Ike    | 1,133.9 km  |   919.6 km  | 1.23× |
+| Vall   | 3,593.2 km  | 2,106.4 km  | 1.71× |
+| Bop    | 2,588.2 km  | 1,156.1 km  | 2.24× |
+| Pol    | 2,415.1 km  |   998.1 km  | 2.42× |
+| Laythe | 4,686.3 km  | 3,223.6 km  | 1.45× |
 | Tylo   | 14,157.9 km | 10,256.5 km | 1.38× |
-| Moho   | 18,173.2 km | 9,396.7 km | 1.93× |
+| Moho   | 18,173.2 km | 9,396.7 km  | 1.93× |
 
-For these bodies, option 1 (synchronous orbit) is shown with a `⚠` tag and blocked if selected, redirecting the user to choose a lower custom altitude.
+For these bodies, option 1 is labelled `(exceeds SOI limit …)` and is rejected if selected, asking the user to pick another option.
 
 ### Low periapsis warning
 
-If the computed periapsis is underground or inside the atmosphere, `print_report()` displays:
+A target altitude can pass validation (above the atmosphere, below the SOI) yet still produce a parking orbit whose periapsis is underground or inside the atmosphere. In that case the report marks the periapsis row and appends:
 
 ```
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ⚠  Periapsis is underground!
-     Minimum target altitude (above surface): 540.1 km
+  Periapsis is inside the atmosphere!
+     Minimum target altitude (clear of atmosphere): 673.1 km
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ```
 
-The minimum altitude is derived analytically:
+The minimum altitudes are derived analytically:
 
 ```
-h_min_surface = R × (1/factor − 1)  where factor = 2×(2/3)^(2/3) − 1 ≈ 0.52628
+factor        = 2 × (2/3)^(2/3) − 1 ≈ 0.52629
+h_min_surface = R / factor − R
 h_min_atm     = (R + h_atm) / factor − R
 ```
 
 ---
 
-## Performance Metrics
+## Performance
 
-All core functions are **O(1)** — closed-form expressions with no loops or iteration.
+All orbital computations are **O(1)** closed-form expressions with no iteration.
 
-The only exception is `children_of()`, which is **O(n)** where n = total number of bodies (17). It also includes an `O(k log k)` sort on the results (k ≤ 5 children in practice).
+The body catalogue holds 17 entries, so `find()` and `children_of()` are linear scans (`children_of()` adds an `O(k log k)` sort over at most 5 children). Total computation per calculation is on the order of microseconds; runtime is entirely dominated by user I/O.
 
-Benchmarks (Python 3.12, 200,000 iterations each):
+**Numerical precision:** the `T_e / T_c` ratio is shown to 6 decimal places in the report and is verified against `2/3` in the test suite.
 
-| Function               | Time per call |
-|------------------------|---------------|
-| `sync_orbit_altitude()`| 0.325 µs      |
-| `soi_max_altitude()`   | < 0.1 µs      |
-| `children_of()`        | 1.117 µs      |
-| `calculate()`          | 1.269 µs      |
-| `orbital_period()`     | < 0.1 µs      |
-| `vis_viva()`           | < 0.1 µs      |
+---
 
-Total computation per session (all functions combined): **< 5 µs**. Runtime is entirely dominated by user I/O.
+## Extending the Calculator
 
-**Numerical precision:** The `T_e/T_c` ratio converges to `2/3` to 9 decimal places (verified: `0.666666667` vs target `0.666666667`). Floating-point representation of `(2/3)^(2/3)` is exact to machine precision (~15 significant digits).
+| To… | Do this |
+|-----|---------|
+| Add a modded body | Append one entry to the static table in `src/KspBodyDatabase.cpp`. Menus, SOI checks, and child-body options pick it up automatically. |
+| Use a different calendar (e.g. Earth time) | Implement `ITimeFormatter` and inject it in `main.cpp`. |
+| Change the output format (e.g. JSON, CSV) | Implement `IReportFormatter` and inject it in `main.cpp`. |
+| Load bodies from a file | Implement `IBodyDatabase` and inject it in `main.cpp`. |
+
+Add matching tests under `utest/` (`test_*.cpp` files are picked up by the Makefile automatically).
 
 ---
 
 ## Supported Bodies
 
-| # | Body    | Radius  | μ (m³/s²)       | Atmosphere | SOI        | Children |
-|---|---------|---------|-----------------|------------|------------|----------|
-| 1 | Kerbol  | 261,600 km | 1.172×10¹⁸   | none       | unlimited  | 7 planets |
-| 2 | Moho    | 250 km  | 1.686×10¹¹      | none       | 9,647 km   | —        |
-| 3 | Eve     | 700 km  | 8.172×10¹²      | 90 km      | 85,109 km  | Gilly    |
-| 4 | Gilly   | 13 km   | 8.289×10⁶       | none       | 126 km     | —        |
-| 5 | Kerbin  | 600 km  | 3.532×10¹²      | 70 km      | 84,159 km  | Mun, Minmus |
-| 6 | Mun     | 200 km  | 6.514×10¹⁰      | none       | 2,430 km   | —        |
-| 7 | Minmus  | 60 km   | 1.766×10⁹       | none       | 2,247 km   | —        |
-| 8 | Duna    | 320 km  | 3.014×10¹¹      | 50 km      | 47,922 km  | Ike      |
-| 9 | Ike     | 130 km  | 1.857×10¹⁰      | none       | 1,050 km   | —        |
-|10 | Dres    | 138 km  | 2.148×10¹⁰      | none       | 32,833 km  | —        |
-|11 | Jool    | 6,000 km| 2.825×10¹⁴      | 200 km     | 2,455,985 km| 5 moons |
-|12 | Laythe  | 500 km  | 1.962×10¹²      | 50 km      | 3,724 km   | —        |
-|13 | Vall    | 300 km  | 2.075×10¹¹      | none       | 2,406 km   | —        |
-|14 | Tylo    | 600 km  | 2.825×10¹²      | none       | 10,857 km  | —        |
-|15 | Bop     | 65 km   | 2.487×10⁹       | none       | 1,221 km   | —        |
-|16 | Pol     | 44 km   | 7.217×10⁸       | none       | 1,042 km   | —        |
-|17 | Eeloo   | 210 km  | 7.441×10¹⁰      | none       | 119,083 km | —        |
+| #  | Body    | Radius      | μ (m³/s²)  | Atmosphere | SOI          | Children    |
+|----|---------|-------------|------------|------------|--------------|-------------|
+| 1  | Kerbol  | 261,600 km  | 1.172×10¹⁸ | none       | unlimited    | 7 planets   |
+| 2  | Moho    | 250 km      | 1.686×10¹¹ | none       | 9,647 km     | —           |
+| 3  | Eve     | 700 km      | 8.172×10¹² | 90 km      | 85,109 km    | Gilly       |
+| 4  | Gilly   | 13 km       | 8.289×10⁶  | none       | 126 km       | —           |
+| 5  | Kerbin  | 600 km      | 3.532×10¹² | 70 km      | 84,159 km    | Mun, Minmus |
+| 6  | Mun     | 200 km      | 6.514×10¹⁰ | none       | 2,430 km     | —           |
+| 7  | Minmus  | 60 km       | 1.766×10⁹  | none       | 2,247 km     | —           |
+| 8  | Duna    | 320 km      | 3.014×10¹¹ | 50 km      | 47,922 km    | Ike         |
+| 9  | Ike     | 130 km      | 1.857×10¹⁰ | none       | 1,050 km     | —           |
+| 10 | Dres    | 138 km      | 2.148×10¹⁰ | none       | 32,833 km    | —           |
+| 11 | Jool    | 6,000 km    | 2.825×10¹⁴ | 200 km     | 2,455,985 km | 5 moons     |
+| 12 | Laythe  | 500 km      | 1.962×10¹² | 50 km      | 3,724 km     | —           |
+| 13 | Vall    | 300 km      | 2.075×10¹¹ | none       | 2,406 km     | —           |
+| 14 | Tylo    | 600 km      | 2.825×10¹² | none       | 10,857 km    | —           |
+| 15 | Bop     | 65 km       | 2.487×10⁹  | none       | 1,221 km     | —           |
+| 16 | Pol     | 44 km       | 7.217×10⁸  | none       | 1,042 km     | —           |
+| 17 | Eeloo   | 210 km      | 7.441×10¹⁰ | none       | 119,083 km   | —           |
